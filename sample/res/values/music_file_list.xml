@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cloudy1">sdcard/WeatherMusic/cloudy1.mp3</string>
+    <string name="cloudy2">sdcard/WeatherMusic/cloudy2.mp3</string>
+	<string name="rain1">sdcard/WeatherMusic/rain1.mp3</string>
+	<string name="rain2">sdcard/WeatherMusic/rain2.mp3</string>
+	<string name="snow1">sdcard/WeatherMusic/snow1.mp3</string>
+	<string name="snow2">sdcard/WeatherMusic/snow2.mp3</string>
+	<string name="sunny1">sdcard/WeatherMusic/sunny1.mp3</string>
+	<string name="sunny2">sdcard/WeatherMusic/sunny2.mp3</string>
+	<item name="cloud1_size" type="integer">2666204</item>
+	<item name="cloud2_size" type="integer">2177566</item>
+	<item name="rain1_size" type="integer">1527267</item>
+	<item name="rain2_size" type="integer">1383489</item>
+	<item name="snow1_size" type="integer">5666816</item>
+	<item name="snow2_size" type="integer">3422754</item>
+	<item name="sunny1_size" type="integer">1263616</item>
+	<item name="sunny2_size" type="integer">2183168</item>
+</resources>

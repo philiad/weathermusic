@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hello">Hello World, WeatherMusic!</string>
+    <string name="app_name">WeatherMusic</string>
+	<string name="sunny">햇살이 화창한 날씨입니다.</string>
+	<string name="cloudy">구름이 잔뜩 끼었습니다.</string>
+	<string name="rain">비가 많이 내리고 있습니다.</string>
+	<string name="snow">눈이 펑펑 쏟아지고 있습니다.</string>
+	<string name="playing">Now playing...</string>
+	<string name="stopped">Music is Stopped.\nPlease Select a Music.</string>
+	<string name="resource_error">Resource Not Found</string>
+	<string name="resource_not_ready">sdcard/WeatherMusic 폴더에\n필요한 리소스 파일이 있는지 확인해 주세요.</string>
+	<string name="resource_disappear">SD카드를 다시 삽입해 주세요.</string>
+	<string name="ok">확인</string>
+	<string name="cancel">종료</string>
+</resources>
