@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<array name="uris">
+		<item type="string">http://weathermusic.googlecode.com/files//sunny1.mp3
+		</item>
+		<item type="string">http://weathermusic.googlecode.com/files//sunny2.mp3
+		</item>
+		<item type="string">http://weathermusic.googlecode.com/files/cloudy1.mp3
+		</item>
+		<item type="string">http://weathermusic.googlecode.com/files//cloudy2.mp3
+		</item>
+		<item type="string">http://weathermusic.googlecode.com/files//rain1.mp3
+		</item>
+		<item type="string">http://weathermusic.googlecode.com/files//rain2.mp3
+		</item>
+		<item type="string">http://weathermusic.googlecode.com/files//snow1.mp3
+		</item>
+		<item type="string">http://weathermusic.googlecode.com/files//snow2.mp3
+		</item>
+	</array>
+	<array name="path">
+		<item type="string">sdcard/WeatherMusic/sunny1.mp3
+		</item>
+		<item type="string">sdcard/WeatherMusic/sunny2.mp3
+		</item>
+		<item type="string">sdcard/WeatherMusic/cloudy1.mp3
+		</item>
+		<item type="string">sdcard/WeatherMusic/cloudy2.mp3
+		</item>
+		<item type="string">sdcard/WeatherMusic/rain1.mp3
+		</item>
+		<item type="string">sdcard/WeatherMusic/rain2.mp3
+		</item>
+		<item type="string">sdcard/WeatherMusic/snow1.mp3
+		</item>
+		<item type="string">sdcard/WeatherMusic/snow2.mp3
+		</item>
+	</array>
+</resources>

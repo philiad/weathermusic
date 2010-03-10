@@ -1,6 +1,9 @@
 package com.huewu.example;
 
+import java.util.ArrayList;
+
 import com.huewu.example.adapter.MusicItemAdapter;
+import com.huewu.example.downloader.HttpDownloader;
 import com.huewu.example.provider.FileMusicProvider;
 import com.huewu.example.provider.IMusicItem;
 import com.huewu.example.provider.RandomWeatherProvider;
@@ -8,6 +11,7 @@ import com.huewu.example.provider.RandomWeatherProvider;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.app.AlertDialog.Builder;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -15,6 +19,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.DialogInterface.OnClickListener;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -30,11 +35,13 @@ public class WeatherMusic extends Activity {
     private static final int MUSIC_NOT_READY_1 = 100;
     private static final int MUSIC_NOT_READY_2 = 101;
     private static final int MUSIC_DISAPPEAR = 102;
+    private static final int MUSIC_DOWNLOAD_PROGRESS = 103;
     
 	private TextView textView = null;
 	private ImageView weatherIcon = null;
 	private TextView musicTextView = null;
 	private ListView listView = null;
+	private ProgressDialog downloadProgress = null;
 	
 	private RadioStation station = null;
 	private UnmountBroadcastReceiver receiver = null;
@@ -44,7 +51,8 @@ public class WeatherMusic extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
-		station = new RadioStation(this, new RandomWeatherProvider(this), new FileMusicProvider(this));
+		station = new RadioStation(
+				getApplicationContext(), new RandomWeatherProvider(getApplicationContext()), new FileMusicProvider(getApplicationContext()));
 		textView = (TextView) findViewById(R.id.weather_desc);
 		musicTextView = (TextView) findViewById(R.id.music_status);
 		weatherIcon = (ImageView) findViewById(R.id.weather_icon);
@@ -72,12 +80,7 @@ public class WeatherMusic extends Activity {
 		String desc = station.getWeatherDescription();
 		textView.setText(desc);
 		weatherIcon.setImageDrawable(station.getWeatherDrawable());
-		
-		if(isAllMusicAvailable() == true){
-			prepareMusic();
-		}else{
-			showDialog(MUSIC_NOT_READY_1);
-		}
+		prepareMusic();
 	}
 	
 	@Override
@@ -159,8 +162,12 @@ public class WeatherMusic extends Activity {
 			})
 			.setCancelable(false)
 			.create();
+
+		case MUSIC_DOWNLOAD_PROGRESS:
+			downloadProgress = new ProgressDialog(this);
+			downloadProgress.setTitle(this.getString(R.string.download));
+			return downloadProgress;
 		}
-		
 		return super.onCreateDialog(id);
 	}
 	
@@ -176,14 +183,69 @@ public class WeatherMusic extends Activity {
 	}
 	
 	private void prepareMusic(){
-		IMusicItem[] musics = new IMusicItem[station.getMusicList().size()];
-		musics = station.getMusicList().toArray(musics);
+		if(isAllMusicAvailable() == false){
+			showDialog(MUSIC_DOWNLOAD_PROGRESS);
+			MusicDownloader downloader = new MusicDownloader();
+			downloader.execute(null);
+		}else{
+			showMusic();			
+		}
+	}
+
+	private void showMusic(){
+        IMusicItem[] musics = new IMusicItem[station.getMusicList().size()];
+        musics = station.getMusicList().toArray(musics);
+        
+        MusicItemAdapter adapter 
+                = new MusicItemAdapter(WeatherMusic.this, R.layout.list_item, musics);
+        
+        listView.setAdapter(adapter);
+        updateMusicStatus();
+	}
+	
+	private class MusicDownloader extends AsyncTask<Object, String, ArrayList<String>>{
 		
-		MusicItemAdapter adapter 
-			= new MusicItemAdapter(this, R.layout.list_item, musics);
+		@Override
+		protected ArrayList<String> doInBackground(Object... params) {
+			HttpDownloader downloader = new HttpDownloader();
+			
+			ArrayList<String> files = new ArrayList<String>();
+			String[] uris = getResources().getStringArray(R.array.uris);
+			String[] path = getResources().getStringArray(R.array.path);
+			
+			int len = uris.length;
+			
+			for(int i = 0; i < len; ++i){
+				this.publishProgress(uris[i]);
+				String file = downloader.downaloadUrl(uris[i], path[i]);
+				if(file != null){
+					files.add(file);
+					Log.e(TAG, "File Downloaded: " + file);
+				}
+			}
+			return files;
+		}
 		
-		listView.setAdapter(adapter);
-		updateMusicStatus();
+		@Override
+		protected void onProgressUpdate(String... values) {
+			super.onProgressUpdate(values);
+			if(downloadProgress != null && downloadProgress.isShowing() == true)
+				downloadProgress.setMessage(values[0]);
+		}
+
+		
+		@Override
+		protected void onPostExecute(ArrayList<String> files) {
+			super.onPostExecute(files);
+			
+			removeDialog(MUSIC_DOWNLOAD_PROGRESS);
+			
+			if(isAllMusicAvailable() == true){
+				showMusic();
+            }else{
+				showDialog(MUSIC_NOT_READY_1);
+			}			
+		}
 	}
 	
 	private class UnmountBroadcastReceiver extends BroadcastReceiver{
