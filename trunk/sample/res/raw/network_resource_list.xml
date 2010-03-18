@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network_resource_list>
+	<resource
+		uri="http://weathermusic.googlecode.com/files//sunny1.mp3"
+		data="sdcard/WeatherMusic/sunny1.m"
+		title="Sunny Music #1"
+		totalSize="1263616"
+		signature=""	
+	/>
+	<resource
+		uri="http://weathermusic.googlecode.com/files//sunny2.mp3"
+		data="sdcard/WeatherMusic/sunny2.m"
+		title="Sunny Music #2"
+		totalSize="2183168"
+		signature=""	
+	/>
+	<resource
+		uri="http://weathermusic.googlecode.com/files/cloudy1.mp3"
+		data="sdcard/WeatherMusic/cloudy1.m"
+		title="Cloudy Music #1"
+		totalSize="2666204"
+		signature=""	
+	/>
+	<resource
+		uri="http://weathermusic.googlecode.com/files//cloudy2.mp3"
+		data="sdcard/WeatherMusic/cloudy2.m"
+		title="Cloudy Music #2"
+		totalSize="2177566"
+		signature=""	
+	/>
+	<resource
+		uri="http://weathermusic.googlecode.com/files//rain1.mp3"
+		data="sdcard/WeatherMusic/rain1.m"
+		title="Rain Music #1"
+		totalSize="1527267"
+		signature=""	
+	/>
+	<resource
+		uri="http://weathermusic.googlecode.com/files//rain2.mp3"
+		data="sdcard/WeatherMusic/rain2.m"
+		title="Rain Music #2"
+		totalSize="1383489"
+		signature=""	
+	/>
+	<resource
+		uri="http://weathermusic.googlecode.com/files//snow1.mp3"
+		data="sdcard/WeatherMusic/snow1.m"
+		title="Snow Music #1"
+		totalSize="5666816"
+		signature=""	
+	/>
+	<resource
+		uri="http://weathermusic.googlecode.com/files//snow2.mp3"
+		data="sdcard/WeatherMusic/snow2.m"
+		title="Snow Music #2"
+		totalSize="3422754"
+		signature=""	
+	/>	
+</network_resource_list>

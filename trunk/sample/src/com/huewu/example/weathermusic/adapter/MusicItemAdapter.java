@@ -1,7 +1,7 @@
-package com.huewu.example.adapter;
+package com.huewu.example.weathermusic.adapter;
 
-import com.huewu.example.R;
-import com.huewu.example.provider.IMusicItem;
+import com.huewu.example.weathermusic.R;
+import com.huewu.example.weathermusic.provider.IMusicItem;
 
 import android.content.Context;
 import android.view.LayoutInflater;

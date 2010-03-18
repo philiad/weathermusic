@@ -1,4 +1,4 @@
-package com.huewu.example.downloader;
+package com.huewu.example.weathermusic.downloader;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -30,6 +30,10 @@ public class HttpDownloader {
 		FileOutputStream fos = null; 			
 		File file = new File(path);
 		HttpGet request = new HttpGet(uri);
+
+		//download resume.
+		//set range header.
+		//request.setHeader(name, value);
 		
 		try {
 			file.createNewFile();	
@@ -58,5 +62,9 @@ public class HttpDownloader {
 			return null;
 		}
 		return path;
+	}
+	
+	private boolean fileAlreadyExist(){
+		return true;
 	}
 }//end of class

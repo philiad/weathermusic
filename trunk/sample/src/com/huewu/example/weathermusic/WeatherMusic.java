@@ -1,12 +1,16 @@
-package com.huewu.example;
+package com.huewu.example.weathermusic;
 
 import java.util.ArrayList;
 
-import com.huewu.example.adapter.MusicItemAdapter;
-import com.huewu.example.downloader.HttpDownloader;
-import com.huewu.example.provider.FileMusicProvider;
-import com.huewu.example.provider.IMusicItem;
-import com.huewu.example.provider.RandomWeatherProvider;
+import org.xmlpull.v1.XmlPullParser;
+
+import com.huewu.example.weathermusic.R;
+import com.huewu.example.weathermusic.adapter.MusicItemAdapter;
+import com.huewu.example.weathermusic.downloader.HttpDownloader;
+import com.huewu.example.weathermusic.network.WifiStateChecker;
+import com.huewu.example.weathermusic.provider.FileMusicProvider;
+import com.huewu.example.weathermusic.provider.IMusicItem;
+import com.huewu.example.weathermusic.provider.RandomWeatherProvider;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -19,6 +23,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.DialogInterface.OnClickListener;
+import android.content.res.XmlResourceParser;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
@@ -42,9 +47,9 @@ public class WeatherMusic extends Activity {
 	private TextView musicTextView = null;
 	private ListView listView = null;
 	private ProgressDialog downloadProgress = null;
-	
 	private RadioStation station = null;
 	private UnmountBroadcastReceiver receiver = null;
+	private WifiStateChecker wifiChecker = null;
 
 	/** Called when the activity is first created. */
 	@Override
@@ -67,20 +72,34 @@ public class WeatherMusic extends Activity {
 		});
 		
 		receiver = new UnmountBroadcastReceiver();
-		
 		IntentFilter intentFilter = new IntentFilter(Intent.ACTION_MEDIA_UNMOUNTED);
 		intentFilter.addAction(Intent.ACTION_MEDIA_EJECT);
 		intentFilter.addDataScheme("file");		
 		registerReceiver(receiver, intentFilter);		
+		
+		String desc = station.getWeatherDescription();
+		textView.setText(desc);
+		weatherIcon.setImageDrawable(station.getWeatherDrawable());
+		wifiChecker = new WifiStateChecker(getApplicationContext());
 	}
 
 	@Override
 	protected void onResume() {
 		super.onResume();
-		String desc = station.getWeatherDescription();
-		textView.setText(desc);
-		weatherIcon.setImageDrawable(station.getWeatherDrawable());
-		prepareMusic();
+		
+		Log.i(TAG, "Wifi State: " + wifiChecker.isWifiConnected());
+		Log.i(TAG, "Wifi State: " + wifiChecker.isReachable("192.168.0.1"));
+		
+		if(	isAllResourceAvailable() == true ){
+			//all resources are ready. run application normally.
+			
+		}else{
+//			XmlResourceParser parser =  getResources().getXml(R.array.path);
+			//some resources are missing. need to download contents. 
+			//application should blocked.
+			
+		}
+//		prepareMusic();
 	}
 	
 	@Override
@@ -112,7 +131,7 @@ public class WeatherMusic extends Activity {
 				.setPositiveButton(R.string.ok, new OnClickListener(){
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
-						if(isAllMusicAvailable() == false)
+						if(isAllResourceAvailable() == false)
 							showDialog(MUSIC_NOT_READY_2);
 						else
 							prepareMusic();
@@ -133,7 +152,7 @@ public class WeatherMusic extends Activity {
 				.setPositiveButton(R.string.ok, new OnClickListener(){
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
-						if(isAllMusicAvailable() == false)
+						if(isAllResourceAvailable() == false)
 							showDialog(MUSIC_NOT_READY_1);
 						else
 							prepareMusic();
@@ -154,7 +173,7 @@ public class WeatherMusic extends Activity {
 			.setPositiveButton(R.string.ok, new OnClickListener(){
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
-					if(isAllMusicAvailable() == false)
+					if(isAllResourceAvailable() == false)
 						showDialog(MUSIC_NOT_READY_1);
 					else
 						prepareMusic();
@@ -178,12 +197,12 @@ public class WeatherMusic extends Activity {
 			musicTextView.setText(R.string.stopped);
 	}
 	
-	private boolean isAllMusicAvailable(){
+	private boolean isAllResourceAvailable(){
 		return station.isAllMusicAvailable();
 	}
 	
 	private void prepareMusic(){
-		if(isAllMusicAvailable() == false){
+		if(isAllResourceAvailable() == false){
 			showDialog(MUSIC_DOWNLOAD_PROGRESS);
 			MusicDownloader downloader = new MusicDownloader();
 			downloader.execute(null);
@@ -240,7 +259,7 @@ public class WeatherMusic extends Activity {
 			
 			removeDialog(MUSIC_DOWNLOAD_PROGRESS);
 			
-			if(isAllMusicAvailable() == true){
+			if(isAllResourceAvailable() == true){
 				showMusic();
             }else{
 				showDialog(MUSIC_NOT_READY_1);
