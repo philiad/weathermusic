@@ -1,4 +1,4 @@
-package com.huewu.example.provider;
+package com.huewu.example.weathermusic.provider;
 
 import android.graphics.drawable.Drawable;
 

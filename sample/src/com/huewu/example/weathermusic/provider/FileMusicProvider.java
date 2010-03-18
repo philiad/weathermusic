@@ -1,10 +1,10 @@
-package com.huewu.example.provider;
+package com.huewu.example.weathermusic.provider;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import com.huewu.example.R;
+import com.huewu.example.weathermusic.R;
 
 import android.content.Context;
 
@@ -105,5 +105,11 @@ public class FileMusicProvider implements IMusicProvider{
 				context.getString(R.string.snow2), context.getResources().getInteger(R.integer.snow2_size));
 		if(item != null)
 			musics.put(R.string.snow2, item);
+	}
+
+	@Override
+	public void setResourceList() {
+		// TODO Auto-generated method stub
+		
 	}
 }//end of class
