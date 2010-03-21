@@ -32,14 +32,14 @@ public class WifiStateChecker {
 		return true;
 	}
 	
-	public boolean isReachable(String ipAddress){
-		try {
-			InetAddress ia = InetAddress.getByName(ipAddress);
-			return ia.isReachable(3000);
-		} catch (UnknownHostException e) {
-			return false;
-		} catch (IOException e) {
-			return false;
-		}
-	}
+//	public boolean isReachable(String ipAddress){
+//		try {
+//			InetAddress ia = InetAddress.getByName(ipAddress);
+//			return ia.isReachable(3000);
+//		} catch (UnknownHostException e) {
+//			return false;
+//		} catch (IOException e) {
+//			return false;
+//		}
+//	}
 }//end of class

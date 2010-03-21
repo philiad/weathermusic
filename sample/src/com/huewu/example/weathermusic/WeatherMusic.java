@@ -1,16 +1,18 @@
 package com.huewu.example.weathermusic;
 
+import java.io.File;
 import java.util.ArrayList;
 
 import org.xmlpull.v1.XmlPullParser;
 
 import com.huewu.example.weathermusic.R;
+import com.huewu.example.weathermusic.RadioStation.MusicItem;
 import com.huewu.example.weathermusic.adapter.MusicItemAdapter;
 import com.huewu.example.weathermusic.downloader.HttpDownloader;
 import com.huewu.example.weathermusic.network.WifiStateChecker;
-import com.huewu.example.weathermusic.provider.FileMusicProvider;
-import com.huewu.example.weathermusic.provider.IMusicItem;
 import com.huewu.example.weathermusic.provider.RandomWeatherProvider;
+import com.huewu.example.weathermusic.resource.NetworkResource;
+import com.huewu.example.weathermusic.resource.ResourceListChecker;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -22,10 +24,12 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface.OnClickListener;
-import android.content.res.XmlResourceParser;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.StatFs;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -37,10 +41,11 @@ import android.widget.AdapterView.OnItemClickListener;
 public class WeatherMusic extends Activity {
 
     private static final String TAG = "WeatherMusic";
-    private static final int MUSIC_NOT_READY_1 = 100;
-    private static final int MUSIC_NOT_READY_2 = 101;
-    private static final int MUSIC_DISAPPEAR = 102;
+    private static final int MUSIC_REQUEST_DOWNLOAD = 100;
+    private static final int MUSIC_WIFI_NOT_CONNECTED = 101;
+    private static final int MUSIC_SDCARD_DISAPPEAR = 102;
     private static final int MUSIC_DOWNLOAD_PROGRESS = 103;
+    private static final int MUSIC_SPACE_IS_NOT_ENOUGH = 104;
     
 	private TextView textView = null;
 	private ImageView weatherIcon = null;
@@ -49,7 +54,10 @@ public class WeatherMusic extends Activity {
 	private ProgressDialog downloadProgress = null;
 	private RadioStation station = null;
 	private UnmountBroadcastReceiver receiver = null;
+
+	private MusicDownloadTask downloader = null;
 	private WifiStateChecker wifiChecker = null;
+	private ResourceListChecker resChecker = null;
 
 	/** Called when the activity is first created. */
 	@Override
@@ -57,7 +65,7 @@ public class WeatherMusic extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
 		station = new RadioStation(
-				getApplicationContext(), new RandomWeatherProvider(getApplicationContext()), new FileMusicProvider(getApplicationContext()));
+				getApplicationContext(), new RandomWeatherProvider(getApplicationContext()));
 		textView = (TextView) findViewById(R.id.weather_desc);
 		musicTextView = (TextView) findViewById(R.id.music_status);
 		weatherIcon = (ImageView) findViewById(R.id.weather_icon);
@@ -80,26 +88,20 @@ public class WeatherMusic extends Activity {
 		String desc = station.getWeatherDescription();
 		textView.setText(desc);
 		weatherIcon.setImageDrawable(station.getWeatherDrawable());
+
 		wifiChecker = new WifiStateChecker(getApplicationContext());
+		resChecker = new ResourceListChecker(getResources().openRawResource(R.raw.network_resource_list));
+		
+//		Log.i(TAG, "Wifi State: " + wifiChecker.isWifiConnected());
+//		Log.i(TAG, "Wifi State: " + wifiChecker.isReachable("192.168.0.1"));
+//		Log.i(TAG, "Resource State: " + resChecker.isAllResourcListAvailable());
+		
+		prepareMusic();		
 	}
 
 	@Override
 	protected void onResume() {
 		super.onResume();
-		
-		Log.i(TAG, "Wifi State: " + wifiChecker.isWifiConnected());
-		Log.i(TAG, "Wifi State: " + wifiChecker.isReachable("192.168.0.1"));
-		
-		if(	isAllResourceAvailable() == true ){
-			//all resources are ready. run application normally.
-			
-		}else{
-//			XmlResourceParser parser =  getResources().getXml(R.array.path);
-			//some resources are missing. need to download contents. 
-			//application should blocked.
-			
-		}
-//		prepareMusic();
 	}
 	
 	@Override
@@ -117,50 +119,65 @@ public class WeatherMusic extends Activity {
 	@Override
 	protected Dialog onCreateDialog(int id) {
 		AlertDialog.Builder builder = new Builder(this);
-		switch(id){
-		case MUSIC_NOT_READY_1:
+		switch(id){	
+		case MUSIC_SPACE_IS_NOT_ENOUGH:
 			return builder
-				.setTitle(R.string.resource_error)
-				.setMessage(R.string.resource_not_ready)
-				.setNegativeButton(R.string.cancel, new OnClickListener(){
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						finish();
-					}
-				})
-				.setPositiveButton(R.string.ok, new OnClickListener(){
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						if(isAllResourceAvailable() == false)
-							showDialog(MUSIC_NOT_READY_2);
-						else
-							prepareMusic();
-					}
-				})
-				.setCancelable(false)
-				.create();
-		case MUSIC_NOT_READY_2:
+			.setTitle(R.string.resource_error)
+			.setMessage(R.string.resource_no_space)
+			.setNegativeButton(R.string.cancel, new OnClickListener(){
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					finish();
+				}
+			})
+			.setPositiveButton(R.string.ok, new OnClickListener(){
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					removeDialog(MUSIC_SPACE_IS_NOT_ENOUGH);
+					prepareMusic();
+				}
+			})
+			.setCancelable(false)
+			.create();
+		case MUSIC_REQUEST_DOWNLOAD:
 			return builder
-				.setTitle(R.string.resource_error)
-				.setMessage(R.string.resource_not_ready)
-				.setNegativeButton(R.string.cancel, new OnClickListener(){
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						finish();
-					}
-				})
-				.setPositiveButton(R.string.ok, new OnClickListener(){
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						if(isAllResourceAvailable() == false)
-							showDialog(MUSIC_NOT_READY_1);
-						else
-							prepareMusic();
-					}
-				})
-				.setCancelable(false)
-				.create();			
-		case MUSIC_DISAPPEAR:
+			.setTitle(R.string.resource_error)
+			.setMessage(R.string.resource_request_download)
+			.setNegativeButton(R.string.cancel, new OnClickListener(){
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					finish();
+				}
+			})
+			.setPositiveButton(R.string.ok, new OnClickListener(){
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					dismissDialog(MUSIC_REQUEST_DOWNLOAD);
+					showDialog(MUSIC_DOWNLOAD_PROGRESS);
+				}
+			})
+			.setCancelable(false)
+			.create();
+		case MUSIC_WIFI_NOT_CONNECTED:
+			return builder
+			.setTitle(R.string.resource_error)
+			.setMessage(R.string.wifi_connect)
+			.setNegativeButton(R.string.cancel, new OnClickListener(){
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					finish();
+				}
+			})
+			.setPositiveButton(R.string.ok, new OnClickListener(){
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					removeDialog(MUSIC_WIFI_NOT_CONNECTED);
+					prepareMusic();
+				}
+			})
+			.setCancelable(false)
+			.create();
+		case MUSIC_SDCARD_DISAPPEAR:
 			return builder
 			.setTitle(R.string.resource_error)
 			.setMessage(R.string.resource_disappear)
@@ -173,10 +190,7 @@ public class WeatherMusic extends Activity {
 			.setPositiveButton(R.string.ok, new OnClickListener(){
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
-					if(isAllResourceAvailable() == false)
-						showDialog(MUSIC_NOT_READY_1);
-					else
-						prepareMusic();
+					prepareMusic();
 				}
 			})
 			.setCancelable(false)
@@ -184,7 +198,22 @@ public class WeatherMusic extends Activity {
 
 		case MUSIC_DOWNLOAD_PROGRESS:
 			downloadProgress = new ProgressDialog(this);
+			downloadProgress.setIndeterminate(false);
+			downloadProgress.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
 			downloadProgress.setTitle(this.getString(R.string.download));
+			downloadProgress.setOnCancelListener(new OnCancelListener(){
+				@Override
+				public void onCancel(DialogInterface dialog) {
+					downloader.cancel(true);
+					downloader = null;
+					finish();
+				}
+			});
+			
+			if(downloader != null)
+				downloader.cancel(true);
+			downloader = new MusicDownloadTask();
+			downloader.execute(resChecker.getMissingResourceList());
 			return downloadProgress;
 		}
 		return super.onCreateDialog(id);
@@ -197,73 +226,94 @@ public class WeatherMusic extends Activity {
 			musicTextView.setText(R.string.stopped);
 	}
 	
-	private boolean isAllResourceAvailable(){
-		return station.isAllMusicAvailable();
-	}
 	
 	private void prepareMusic(){
-		if(isAllResourceAvailable() == false){
-			showDialog(MUSIC_DOWNLOAD_PROGRESS);
-			MusicDownloader downloader = new MusicDownloader();
-			downloader.execute(null);
+		if(resChecker.isAllResourcListAvailable() == false){
+			//sd card space is enough?
+			String state = Environment.getExternalStorageState();
+			if(state.equals(Environment.MEDIA_MOUNTED) == false){
+				showDialog(MUSIC_SPACE_IS_NOT_ENOUGH);	//space is not enough popup.
+			}else{
+				StatFs stat = new StatFs(Environment.getExternalStorageDirectory().getAbsolutePath());
+				long space = stat.getBlockSize() * stat.getAvailableBlocks();
+				Log.i(TAG, "Required Space: " + resChecker.getRequiredSize());
+				if(resChecker.getRequiredSize() > space)
+					showDialog(MUSIC_SPACE_IS_NOT_ENOUGH); //space is not enough popup.
+				else if(wifiChecker.isWifiConnected() == false)
+					showDialog(MUSIC_WIFI_NOT_CONNECTED);
+				else
+					showDialog(MUSIC_REQUEST_DOWNLOAD); //request download.
+			}
 		}else{
+			//everything is ok!
+			station.setResources(resChecker.getResourceList());
 			showMusic();			
 		}
 	}
 
 	private void showMusic(){
-        IMusicItem[] musics = new IMusicItem[station.getMusicList().size()];
-        musics = station.getMusicList().toArray(musics);
-        
+        MusicItem[] musics = null;
+        musics = station.getMusics();
         MusicItemAdapter adapter 
                 = new MusicItemAdapter(WeatherMusic.this, R.layout.list_item, musics);
-        
         listView.setAdapter(adapter);
         updateMusicStatus();
 	}
 	
-	private class MusicDownloader extends AsyncTask<Object, String, ArrayList<String>>{
+	/**
+	 * MusicDowloadTask
+	 * Download necessary mp3 files by interent.
+	 */
+	private class MusicDownloadTask extends AsyncTask<NetworkResource[], NetworkResource, Void>{
+		HttpDownloader downloader = null;
 		
 		@Override
-		protected ArrayList<String> doInBackground(Object... params) {
-			HttpDownloader downloader = new HttpDownloader();
-			
-			ArrayList<String> files = new ArrayList<String>();
-			String[] uris = getResources().getStringArray(R.array.uris);
-			String[] path = getResources().getStringArray(R.array.path);
-			
-			int len = uris.length;
-			
-			for(int i = 0; i < len; ++i){
-				this.publishProgress(uris[i]);
-				String file = downloader.downaloadUrl(uris[i], path[i]);
-				if(file != null){
-					files.add(file);
-					Log.e(TAG, "File Downloaded: " + file);
-				}
-			}
-			return files;
-		}
-		
-		@Override
-		protected void onProgressUpdate(String... values) {
-			super.onProgressUpdate(values);
-			if(downloadProgress != null && downloadProgress.isShowing() == true)
-				downloadProgress.setMessage(values[0]);
-		}
+		protected Void doInBackground(NetworkResource[]... params) {
+			downloader = new HttpDownloader();
+			downloader.setOnDownloadProgressListener(new HttpDownloader.onDownloadProgressListener(){
 
+				@Override
+				public void onProgress(NetworkResource res) {
+					publishProgress(res);
+				}
+			});
+			NetworkResource[] list = params[0];
+			
+			for(NetworkResource res : list){
+				String result = downloader.downloadNetworkResource(res);
+				if(result == null)
+					return null;	//network error.
+			}
+			return null;
+		}
 		
 		@Override
-		protected void onPostExecute(ArrayList<String> files) {
-			super.onPostExecute(files);
+		protected void onCancelled() {
+			super.onCancelled();
+			if(downloader != null)
+				downloader.abort();
+		}
+		
+		@Override
+		protected void onProgressUpdate(NetworkResource... values) {
+			super.onProgressUpdate(values);
+			if(downloadProgress != null && downloadProgress.isShowing() == true){
+				NetworkResource res = values[0];
+				
+				if(downloadProgress.getMax() != (res.totalSize / 1024))
+					downloadProgress.setMax((int) (res.totalSize / 1024));
+				
+				downloadProgress.setTitle(res.title + " 를 다운로드 하고  있습니다");
+				downloadProgress.setProgress((int) (res.currentSize / 1024));
+			}
+		}
+		
+		@Override
+		protected void onPostExecute(Void result) {
+			super.onPostExecute(result);
 			
 			removeDialog(MUSIC_DOWNLOAD_PROGRESS);
-			
-			if(isAllResourceAvailable() == true){
-				showMusic();
-            }else{
-				showDialog(MUSIC_NOT_READY_1);
-			}			
+			prepareMusic();
 		}
 	}
 	
@@ -272,7 +322,7 @@ public class WeatherMusic extends Activity {
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			Log.e(TAG, "SD Card Unmounted");
-			WeatherMusic.this.showDialog(MUSIC_DISAPPEAR);
+			WeatherMusic.this.showDialog(MUSIC_SDCARD_DISAPPEAR);
 		}
 	}		
 }//end of class
