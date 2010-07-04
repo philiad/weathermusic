@@ -11,8 +11,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
+    	<receiver android:name=".TestWidgetProvider">
+    		<intent-filter>
+        		<action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        		<action android:name="com.huewu.example.widget.CLICK" />
+		    </intent-filter>
+    		<meta-data android:name="android.appwidget.provider"
+               android:resource="@xml/widget" />
+       	</receiver>    	
     </application>
-
-
 </manifest> 
