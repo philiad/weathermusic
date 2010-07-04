@@ -53,9 +53,9 @@ public class TestWidgetProvider extends AppWidgetProvider {
 			PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 			RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget);
 			if(isChecked == true)
-				views.setImageViewResource(R.id.onoff, android.R.drawable.checkbox_on_background);
+				views.setImageViewResource(R.id.onoff, R.drawable.on);
 			else
-				views.setImageViewResource(R.id.onoff, android.R.drawable.checkbox_off_background);
+				views.setImageViewResource(R.id.onoff, R.drawable.off);
 
 			views.setOnClickPendingIntent(R.id.onoff, pendingIntent);
 			appWidgetManager.updateAppWidget(appWidgetId, views);
