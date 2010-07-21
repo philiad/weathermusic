@@ -1,7 +1,7 @@
 package com.huewu.game.rocketnplanet.logic;
 
-import com.huewu.game.rocketnplanet.Renderable;
-import com.huewu.game.rocketnplanet.RenderableList;
+import com.huewu.game.rocketnplanet.object.Renderable;
+import com.huewu.game.rocketnplanet.object.RenderableList;
 
 import android.os.SystemClock;
 

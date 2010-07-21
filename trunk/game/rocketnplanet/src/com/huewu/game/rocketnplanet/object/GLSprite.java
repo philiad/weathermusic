@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-package com.huewu.game.rocketnplanet;
+package com.huewu.game.rocketnplanet.object;
 
 import javax.microedition.khronos.opengles.GL10;
 import javax.microedition.khronos.opengles.GL11;
 import javax.microedition.khronos.opengles.GL11Ext;
+
+
 
 /**
  * This is the OpenGL ES version of a sprite.  It is more complicated than the
@@ -79,8 +81,7 @@ public class GLSprite extends Renderable {
                     z);
             
             mGrid.draw(gl, true, false);
-            
             gl.glPopMatrix();
         }
     }
-}
+}//end of class

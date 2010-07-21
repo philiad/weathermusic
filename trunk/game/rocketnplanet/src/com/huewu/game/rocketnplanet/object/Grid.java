@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.huewu.game.rocketnplanet;
+package com.huewu.game.rocketnplanet.object;
 
 
 import java.nio.Buffer;
@@ -33,7 +33,7 @@ import javax.microedition.khronos.opengles.GL11;
  * the SpriteText package in the APIDemos Android sample) to support hardware
  * vertex buffers.
  */
-class Grid {
+public class Grid {
     private FloatBuffer mFloatVertexBuffer;
     private FloatBuffer mFloatTexCoordBuffer;
     private FloatBuffer mFloatColorBuffer;
