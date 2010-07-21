@@ -18,6 +18,8 @@ package com.huewu.game.rocketnplanet;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.LinkedHashMap;
+import java.util.Map.Entry;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
@@ -25,6 +27,11 @@ import javax.microedition.khronos.opengles.GL;
 import javax.microedition.khronos.opengles.GL10;
 import javax.microedition.khronos.opengles.GL11;
 import javax.microedition.khronos.opengles.GL11Ext;
+
+import com.huewu.game.rocketnplanet.object.GLSprite;
+import com.huewu.game.rocketnplanet.object.Grid;
+import com.huewu.game.rocketnplanet.object.SpriteList;
+
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -44,17 +51,16 @@ public class SimpleGLRenderer implements Renderer {
     private static BitmapFactory.Options sBitmapOptions
         = new BitmapFactory.Options();
     // An array of things to draw every frame.
-    private GLSprite[] mSprites;
+    private final SpriteList mSprites = new SpriteList();
     // Pre-allocated arrays to use at runtime so that allocation during the
     // test can be avoided.
     private int[] mTextureNameWorkspace;
     private int[] mCropWorkspace;
     // A reference to the application context.
     private Context mContext;
-    // Determines the use of vertex arrays.
-    private boolean mUseVerts;
     // Determines the use of vertex buffer objects.
     private boolean mUseHardwareBuffers;
+    private TextureMap textureMap = new TextureMap();
     
     public SimpleGLRenderer(Context context) {
         // Pre-allocate and store these objects so we can use them at runtime
@@ -97,10 +103,6 @@ public class SimpleGLRenderer implements Renderer {
         return configSpec;
     }
     
-    public void setSprites(GLSprite[] sprites) {
-        mSprites = sprites;
-    }
-    
     /** 
      * Changes the vertex mode used for drawing.  
      * @param useVerts  Specifies whether to use a vertex array.  If false, the
@@ -109,30 +111,20 @@ public class SimpleGLRenderer implements Renderer {
      *     main memory or on the graphics card.  Ignored if useVerts is false.
      */
     public void setVertMode(boolean useVerts, boolean useHardwareBuffers) {
-        mUseVerts = useVerts;
         mUseHardwareBuffers = useVerts ? useHardwareBuffers : false;
     }
 
     /** Draws the sprites. */
     public void drawFrame(GL10 gl) {
-        if (mSprites != null) {
-
-            gl.glMatrixMode(GL10.GL_MODELVIEW);
-          
-            if (mUseVerts) {
+    	synchronized (mSprites) {
+            if (mSprites != null) {
+                gl.glMatrixMode(GL10.GL_MODELVIEW);
                 Grid.beginDrawing(gl, true, false);
-            }
-            
-            for (int x = 0; x < mSprites.length; x++) {
-                mSprites[x].draw(gl);
-            }
-            
-            if (mUseVerts) {
+                for(GLSprite s : mSprites)
+                    s.draw(gl);
                 Grid.endDrawing(gl);
             }
-            
-           
-        }
+    	}
     }
 
     /* Called when the size of the window changes. */
@@ -188,60 +180,53 @@ public class SimpleGLRenderer implements Renderer {
             // then the buffer indexes that we recorded previously are now
             // invalid.  Forget them here and recreate them below.
             if (mUseHardwareBuffers) {
-                for (int x = 0; x < mSprites.length; x++) {
+            	for(GLSprite s : mSprites){
                     // Ditch old buffer indexes.
-                    mSprites[x].getGrid().invalidateHardwareBuffers();
-                }
+                    s.getGrid().invalidateHardwareBuffers();
+            	}
             }
             
             // Load our texture and set its texture name on all sprites.
             
-            // To keep this sample simple we will assume that sprites that share
-            // the same texture are grouped together in our sprite list. A real
-            // app would probably have another level of texture management, 
-            // like a texture hash.
             
-            int lastLoadedResource = -1;
-            int lastTextureId = -1;
-            
-            for (int x = 0; x < mSprites.length; x++) {
-                int resource = mSprites[x].getResourceId();
-                if (resource != lastLoadedResource) {
-                    lastTextureId = loadBitmap(mContext, gl, resource);
-                    lastLoadedResource = resource;
-                }
-                mSprites[x].setTextureName(lastTextureId);
+            for(GLSprite s : mSprites){
+                int resource = s.getResourceId();
+                s.setTextureName(textureMap.getBitamp(gl, resource));
                 if (mUseHardwareBuffers) {
-                    Grid currentGrid = mSprites[x].getGrid();
+                    Grid currentGrid = s.getGrid();
                     if (!currentGrid.usingHardwareBuffers()) {
                         currentGrid.generateHardwareBuffers(gl);
                     }
-                    //mSprites[x].getGrid().generateHardwareBuffers(gl);
                 }
             }
         }
     }
     
     /**
+     * We don't need to concern about it. 
+     * android platform will destroy all gl related resoruces, when gl lost event happens.
      * Called when the rendering thread shuts down.  This is a good place to
      * release OpenGL ES resources.
      * @param gl
      */
+    @Deprecated
     public void shutdown(GL11 gl) {
-        if (mSprites != null) {
 
-            int lastFreedResource = -1;
-            int[] textureToDelete = new int[1];
+    	//release all textures.
+        int[] textureToDelete = new int[1];
+    	
+    	for(Entry<Integer, Integer> texture : textureMap.entrySet()){
+    		textureToDelete[0] = texture.getValue(); 
+            gl.glDeleteTextures(1, textureToDelete, 0);
+    	}
+    	
+    	//release hardware buffer.
+    	
+        if (mSprites != null) {
             
-            for (int x = 0; x < mSprites.length; x++) {
-                int resource = mSprites[x].getResourceId();
-                if (resource != lastFreedResource) {
-                    textureToDelete[0] = mSprites[x].getTextureName();
-                    gl.glDeleteTextures(1, textureToDelete, 0);
-                    mSprites[x].setTextureName(0);
-                }
+            for(GLSprite s : mSprites){
                 if (mUseHardwareBuffers) {
-                    mSprites[x].getGrid().releaseHardwareBuffers(gl);
+                    s.getGrid().releaseHardwareBuffers(gl);
                 }
             }
         }
@@ -296,9 +281,28 @@ public class SimpleGLRenderer implements Renderer {
             if (error != GL10.GL_NO_ERROR) {
                 Log.e("SpriteMethodTest", "Texture Load GLError: " + error);
             }
-        
         }
 
         return textureName;
     }
+
+	public void setSprites(SpriteList allSprite) {
+		synchronized(mSprites){
+			mSprites.clear();
+			mSprites.addAll(allSprite);
+		}
+	}
+	
+	class TextureMap extends LinkedHashMap<Integer, Integer>{
+
+		private static final long serialVersionUID = 1620883313432432583L;
+
+		public synchronized int getBitamp(GL10 gl, int res) {
+			Integer textureName = super.get(res);
+			if(textureName == null)
+				textureName = loadBitmap(SimpleGLRenderer.this.mContext, gl, res);
+			return textureName.intValue();
+		}
+	}
+	
 }//end of class

@@ -1,8 +1,7 @@
-package com.huewu.game.rocketnplanet;
+package com.huewu.game.rocketnplanet.logic;
 
-import com.huewu.game.rocketnplanet.logic.GraviyApplyer;
-import com.huewu.game.rocketnplanet.logic.JumpApplyer;
-import com.huewu.game.rocketnplanet.logic.LoopBoundApplyer;
+import com.huewu.game.rocketnplanet.object.Renderable;
+import com.huewu.game.rocketnplanet.object.RenderableList;
 
 import android.os.SystemClock;
 import android.view.MotionEvent;
@@ -59,10 +58,10 @@ public class UserInputHandler implements OnTouchListener, Runnable{
 	
     public void setRenderables(RenderableList renderables) {
         mRenderables = renderables;
-        Renderable[] r = new Renderable[1];
+//        Renderable[] r = new Renderable[1];
         jumper.setTargets(renderables.subList(0, 1));
-        graviter.setTargets(renderables);
-        looper.setTargets(renderables.subList(1, renderables.size()-1));
+//        graviter.setTargets(renderables);
+//        looper.setTargets(renderables.subList(1, renderables.size()-1));
     }
     
     public void setViewSize(int width, int height) {

@@ -1,4 +1,4 @@
-package com.huewu.game.rocketnplanet;
+package com.huewu.game.rocketnplanet.object;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;

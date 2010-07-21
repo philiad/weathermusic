@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.huewu.game.rocketnplanet;
+package com.huewu.game.rocketnplanet.object;
 
 /** 
  * Base class defining the core set of information necessary to render (and move
