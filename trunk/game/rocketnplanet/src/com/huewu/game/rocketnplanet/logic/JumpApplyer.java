@@ -15,7 +15,7 @@ public class JumpApplyer implements IApplyer{
     private float mPressDownTime;
     private float mPressUpTime;
     private float mEnergy = 0.0f;//Float.MAX_VALUE;	
-    private RenderableList mRenderables;    
+    private RenderableList mRenderables = new RenderableList();    
     
     private final static float JUMP_POWER_DIVIDER = 2.0f;
     
@@ -40,33 +40,50 @@ public class JumpApplyer implements IApplyer{
 		
 		mEnergy = Math.min(mPressTimeDelta * (height / JUMP_POWER_DIVIDER), mEnergy);		
     }
+    
+	public void setBound(int w, int h){
+		width = w;
+		height = h;
+	}    
 
 	@Override
 	public void apply(float timeDelta) {
-    	if(mRenderables == null || bJumping == false)
-    		return;
-    	
-		if(mEnergy > 0){
-			//jump!
-			float vy = Math.min(height / JUMP_POWER_DIVIDER, mEnergy);	//	mEnergy * timeDeltaSeconds;
-			mEnergy -= height * timeDelta;
-			
-	    	for(Renderable r : mRenderables){
-				float vx = (x - r.x);
-	    		//set velocity.
-				r.velocityX = vx;
-				r.velocityY = vy;
-	    	}		
+		synchronized (mRenderables) {
+	    	if(mRenderables == null || bJumping == false)
+	    		return;
+	    	
+			if(mEnergy > 0){
+				//jump!
+				float vy = Math.min(height / JUMP_POWER_DIVIDER, mEnergy);	//	mEnergy * timeDeltaSeconds;
+				mEnergy -= height * timeDelta;
+				
+		    	for(Renderable r : mRenderables){
+					float vx = (x - (r.x + r.width / 2.0f)) * 3.0f;;
+					
+					if(vx > 0)
+						vx = Math.min(vx, width / JUMP_POWER_DIVIDER);
+					else
+						vx = Math.max(vx, -width / JUMP_POWER_DIVIDER);
+					
+		    		//set velocity.
+					r.velocityX = vx;
+					r.velocityY = vy;
+		    	}		
+			}
 		}
     }
 
 	@Override
-	public void setTargets(RenderableList renderable) {
-    	mRenderables = renderable;
+	public void addTargets(RenderableList renderable) {
+		synchronized (mRenderables) {
+	    	mRenderables.addAll(renderable);
+		}
 	}
-	
-	public void setBound(int w, int h){
-		width = w;
-		height = h;
+
+	@Override
+	public void removeTargets(RenderableList renderable) {
+		synchronized (mRenderables) {
+	    	mRenderables.removeAll(renderable);
+		}
 	}
 }//end of class

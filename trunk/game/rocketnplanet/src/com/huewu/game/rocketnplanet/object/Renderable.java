@@ -40,10 +40,10 @@ public abstract class Renderable {
     public float rotateY;
     public float rotateZ;
     
-    public float energyX;	//f = mv*v
-    public float energyY;	//f = mv*v
-    
     // Size.
     public float width;
     public float height;
+    
+    //weight
+    public float weight;
 }

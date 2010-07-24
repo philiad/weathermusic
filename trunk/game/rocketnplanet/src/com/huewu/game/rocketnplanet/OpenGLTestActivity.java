@@ -19,7 +19,7 @@ package com.huewu.game.rocketnplanet;
 import java.lang.ref.WeakReference;
 
 import com.huewu.game.rocketnplanet.R;
-import com.huewu.game.rocketnplanet.logic.UserInputHandler;
+import com.huewu.game.rocketnplanet.logic.GameProcessor;
 import com.huewu.game.rocketnplanet.object.GLSprite;
 import com.huewu.game.rocketnplanet.object.Grid;
 import com.huewu.game.rocketnplanet.object.ObjectManager;
@@ -31,6 +31,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
+import android.util.Log;
 
 /**
  * Activity for testing OpenGL ES drawing speed.  This activity sets up sprites 
@@ -54,32 +55,33 @@ public class OpenGLTestActivity extends Activity {
 		DisplayMetrics dm = new DisplayMetrics();
 		getWindowManager().getDefaultDisplay().getMetrics(dm);		
 		
-		ObjectManager om = ObjectManager.LoadSettings(new WeakReference<Activity>(this), null);
+		ObjectManager om = ObjectManager.LoadSettings(getApplicationContext(), dm, null);
 
 		// Now's a good time to run the GC.  Since we won't do any explicit
 		// allocation during the test, the GC should stay dormant and not
 		// influence our results.
+		GameProcessor handler = new GameProcessor(); 
+		
 		Runtime r = Runtime.getRuntime();
 		r.gc();
 
-		spriteRenderer.setSprites(om.getAllSprite());
+		spriteRenderer.setObjectManager(om);
 		spriteRenderer.setVertMode(true, true);
-		
-		UserInputHandler handler = new UserInputHandler(); 
-		handler.setRenderables(om.getCharacter());
+		handler.setObjectManager(om);
 		handler.setViewSize(dm.widthPixels, dm.heightPixels);
-		spriteRenderer.setEvent(handler);
+		spriteRenderer.addEvent(handler);
 		
-//		if (animate) {
-//			Mover simulationRuntime = new Mover();
-//			simulationRuntime.setRenderables(renderableArray);
-//			simulationRuntime.setViewSize(dm.widthPixels, dm.heightPixels);
-//			spriteRenderer.setEvent(simulationRuntime);
-//		}
 
 		mGLSurfaceView.setRenderer(spriteRenderer);
 		setContentView(mGLSurfaceView);
 		
 		mGLSurfaceView.setOnTouchListener(handler);
+	}
+	
+	@Override
+	protected void onDestroy() {
+		ProfileRecorder.sSingleton.stop(ProfileRecorder.PROFILE_FRAME);
+		Log.i("Profile", "Frame: " + ProfileRecorder.sSingleton.getAverageTime(ProfileRecorder.PROFILE_FRAME));
+		super.onDestroy();
 	}
 }//end of class

@@ -367,8 +367,6 @@ public class Grid {
                 assert mTextureCoordBufferIndex != 0;
                 assert mIndexBufferIndex != 0;
                 assert gl11.glGetError() == 0;
-                
-            
             }
         }
     }
