@@ -7,7 +7,7 @@ public class LoopBoundApplyer implements IApplyer{
 
 	private int width;
 	private int height;
-	private RenderableList mRenderables;
+	private RenderableList mRenderables = new RenderableList();
 
 	public void setBound(int w, int h){
 		width = w;
@@ -16,20 +16,31 @@ public class LoopBoundApplyer implements IApplyer{
 	
 	@Override
 	public void apply(float timeDelta) {
-		if(mRenderables == null)
-			return;
-		
-		for(Renderable r : mRenderables){
-			if(r.y <= 0){
-				r.y = height;
-				r.x = (float)(Math.random() * width);
-				r.velocityX = (float)((Math.random() - 0.5f) * 200.0f);
+		synchronized (mRenderables) {
+			if(mRenderables == null)
+				return;
+			
+			for(Renderable r : mRenderables){
+				if(r.y <= 0){
+					r.y = height;
+					r.x = (float)(Math.random() * width);
+					r.velocityX = (float)((Math.random() - 0.5f) * 200.0f);
+				}
 			}
 		}
 	}
 
 	@Override
-	public void setTargets(RenderableList renderable) {
-		mRenderables = renderable;
+	public void addTargets(RenderableList renderable) {
+		synchronized (mRenderables) {
+			mRenderables.addAll(renderable);
+		}
 	}
-}
+
+	@Override
+	public void removeTargets(RenderableList renderable) {
+		synchronized (mRenderables) {
+			mRenderables.removeAll(renderable);
+		}
+	}
+}//end of class

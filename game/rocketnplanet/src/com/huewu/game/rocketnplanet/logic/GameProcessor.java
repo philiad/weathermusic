@@ -1,5 +1,6 @@
 package com.huewu.game.rocketnplanet.logic;
 
+import com.huewu.game.rocketnplanet.object.ObjectManager;
 import com.huewu.game.rocketnplanet.object.Renderable;
 import com.huewu.game.rocketnplanet.object.RenderableList;
 
@@ -8,13 +9,12 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
 
-public class UserInputHandler implements OnTouchListener, Runnable{
+public class GameProcessor implements OnTouchListener, Runnable{
 	
 	private JumpApplyer jumper = new JumpApplyer();
 	private GraviyApplyer graviter = new GraviyApplyer();
 	private LoopBoundApplyer looper = new LoopBoundApplyer();
-	
-    private RenderableList mRenderables;
+	private ScrollApplyer scroll = new ScrollApplyer();
     
     private long mLastTime;
     private long mLastJumbleTime;
@@ -56,19 +56,24 @@ public class UserInputHandler implements OnTouchListener, Runnable{
 		return false;
 	}
 	
-    public void setRenderables(RenderableList renderables) {
-        mRenderables = renderables;
-//        Renderable[] r = new Renderable[1];
-        jumper.setTargets(renderables.subList(0, 1));
-//        graviter.setTargets(renderables);
-//        looper.setTargets(renderables.subList(1, renderables.size()-1));
-    }
-    
+	ObjectManager om = null;
+	public void setObjectManager(ObjectManager om) {
+		this.om = om;
+        jumper.addTargets(om.getHero());
+        graviter.addTargets(om.getHero());
+        graviter.addTargets(om.getEnemy());
+        looper.addTargets(om.getEnemy());
+        scroll.addTargets(om.getEnemy());
+        scroll.addTargets(om.getBackground());
+        scroll.setHero(om.getHero());
+	}		
+
     public void setViewSize(int width, int height) {
         mViewHeight = height;
         mViewWidth = width;
         jumper.setBound(width, height);
         looper.setBound(width, height);
+        scroll.setViewSize(width, height);
     }
 
 	@Override
@@ -76,14 +81,14 @@ public class UserInputHandler implements OnTouchListener, Runnable{
 		
         final long time = SystemClock.uptimeMillis();
         final long timeDelta = time - mLastTime;
-        final float timeDeltaSeconds = 
-            mLastTime > 0.0f ? timeDelta / 1000.0f : 0.0f;
+        final float timeDeltaSeconds = mLastTime > 0.0f ? timeDelta / 1000.0f : 0.0f;
         mLastTime = time;		
-        
+
         jumper.apply(timeDeltaSeconds);
         graviter.apply(timeDeltaSeconds);
+        scroll.apply(timeDeltaSeconds);
 		
-		for(Renderable r : mRenderables){
+		for(Renderable r : om.getAllSprite()){
 			
 			//apply velocity
             r.x = r.x + (r.velocityX) * timeDeltaSeconds;
@@ -100,6 +105,6 @@ public class UserInputHandler implements OnTouchListener, Runnable{
 		}
 		
 		looper.apply(timeDeltaSeconds);
-	}	
+	}
 }//end of class
 

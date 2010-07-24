@@ -1,13 +1,23 @@
 package com.huewu.game.rocketnplanet.object;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
+import java.util.LinkedHashMap;
+
+import javax.microedition.khronos.opengles.GL10;
+import javax.microedition.khronos.opengles.GL11;
+import javax.microedition.khronos.opengles.GL11Ext;
 
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.BitmapFactory.Options;
 import android.graphics.drawable.BitmapDrawable;
+import android.opengl.GLUtils;
 import android.util.DisplayMetrics;
+import android.util.Log;
 
 import com.huewu.game.rocketnplanet.R;
 
@@ -23,11 +33,12 @@ public class ObjectManager {
 	//scrolled by user character's position.
 	final RenderableList background = new RenderableList();	
 	final GridPool gridPool = new GridPool();	
+	final TextureMap textureMap = new TextureMap();
 	
 	private ObjectManager(){
 	}
 	
-	public static ObjectManager LoadSettings(WeakReference<Activity> activity, InputStream is){
+	public static ObjectManager LoadSettings(Context context, DisplayMetrics dm, InputStream is){
 		ObjectManager om = new ObjectManager();
 		
 		//TODO read setting. parse xml. 
@@ -37,11 +48,12 @@ public class ObjectManager {
 
 		// We need to know the width and height of the display pretty soon,
 		// so grab the information now.
-		DisplayMetrics dm = new DisplayMetrics();
-		activity.get().getWindowManager().getDefaultDisplay().getMetrics(dm);
+		
+		int resList[] = new int[] {R.drawable.background, R.drawable.moon, R.drawable.skate1, R.drawable.skate2, R.drawable.skate3, R.drawable.icon};
+		om.textureMap.setResourceList(resList);
 
-		GLSprite background = new GLSprite(R.drawable.background);
-		BitmapDrawable backgroundImage = (BitmapDrawable)activity.get().getResources().getDrawable(R.drawable.background);
+		GLSprite background = new GLSprite(R.drawable.background, om.textureMap);
+		BitmapDrawable backgroundImage = (BitmapDrawable)context.getResources().getDrawable(R.drawable.background);
 		Bitmap backgoundBitmap = backgroundImage.getBitmap();
 		background.width = backgoundBitmap.getWidth();
 		background.height = backgoundBitmap.getHeight();
@@ -65,6 +77,13 @@ public class ObjectManager {
 		spriteGrid.set(1, 0, SPRITE_WIDTH, 0.0f, 0.0f, 1.0f, 1.0f, null);
 		spriteGrid.set(0, 1, 0.0f, SPRITE_HEIGHT, 0.0f, 0.0f, 0.0f, null);
 		spriteGrid.set(1, 1, SPRITE_WIDTH, SPRITE_HEIGHT, 0.0f, 1.0f, 0.0f, null);
+		
+		
+		TileMap tileMap = new TileMap(R.drawable.skate3, om.textureMap);
+		tileMap.createTiles(50, 50, background.width, background.height);
+		tileMap.setGrid(spriteGrid);
+		om.allSprite.add(tileMap);
+		
 
 		// This list of things to move. It points to the same content as the
 		// sprite list except for the background.
@@ -73,11 +92,11 @@ public class ObjectManager {
 			GLSprite robot;
 			// Our robots come in three flavors.  Split them up accordingly.
 			if (x < robotBucketSize) {
-				robot = new GLSprite(R.drawable.skate1);
+				robot = new GLSprite(R.drawable.skate1, om.textureMap);
 			} else if (x < robotBucketSize * 2) {
-				robot = new GLSprite(R.drawable.skate2);
+				robot = new GLSprite(R.drawable.skate2, om.textureMap);
 			} else {
-				robot = new GLSprite(R.drawable.skate3);
+				robot = new GLSprite(R.drawable.skate3, om.textureMap);
 			}
 
 			robot.width = SPRITE_WIDTH;
@@ -86,6 +105,7 @@ public class ObjectManager {
 			// Pick a random location for this sprite.
 			robot.x = (float)(Math.random() * dm.widthPixels);
 			robot.y = (float)(Math.random() * dm.heightPixels);
+			robot.weight = 1.5f;
 
 			// All sprites can reuse the same grid.  If we're running the
 			// DrawTexture extension test, this is null.
@@ -100,7 +120,7 @@ public class ObjectManager {
 		for (int x = 0; x < 10; x++) {
 			GLSprite meteor;
 			// Our robots come in three flavors.  Split them up accordingly.
-			meteor = new GLSprite(R.drawable.moon);
+			meteor = new GLSprite(R.drawable.moon, om.textureMap);
 
 			meteor.width = SPRITE_WIDTH;
 			meteor.height = SPRITE_HEIGHT;
@@ -108,6 +128,7 @@ public class ObjectManager {
 			// Pick a random location for this sprite.
 			meteor.x = (float)(Math.random() * dm.widthPixels);
 			meteor.y = (float)(Math.random() * dm.heightPixels);
+			meteor.weight = 0.5f;
 
 			// All sprites can reuse the same grid.  If we're running the
 			// DrawTexture extension test, this is null.
@@ -130,7 +151,7 @@ public class ObjectManager {
 		return background;
 	}
 	
-	public RenderableList getCharacter() {
+	public RenderableList getHero() {
 		return character;
 	}
 	
@@ -141,5 +162,104 @@ public class ObjectManager {
 	public RenderableList getObstacle() {
 		return obstacle;
 	}
+
+	public void buildTextureMap(GL10 gl, Context context) {
+		textureMap.buildTextureMap(gl, context);
+	}
 	
+	class TextureMap extends LinkedHashMap<Integer, Integer>{
+
+		private static final long serialVersionUID = 1620883313432432583L;
+		private BitmapFactory.Options sBitmapOptions;	
+		private int[] mCropWorkspace = new int[4];
+		private int[] mTextureNameWorkspace = new int[1];	
+		
+		int resList[];
+		
+		public void setResourceList(int[] resList){
+			this.resList = resList;
+		}
+		
+		public void buildTextureMap(GL10 gl, Context context){
+			if(gl == null || context == null || resList == null)
+				return;
+			
+			sBitmapOptions = new Options();
+			
+			clearTextureMap();
+			sBitmapOptions.inPreferredConfig = Bitmap.Config.RGB_565;
+			for(int r : resList){
+				buildTexture(gl, context, r);
+			}
+		}
+		
+		public void clearTextureMap(){
+			this.clear();
+		}
+
+		public int getTextureName(int resourceId){
+			try{
+				return get(resourceId);
+			}catch (Exception e){
+				return -1;
+			}
+		}
+		
+		/** 
+		 * Loads a bitmap into OpenGL and sets up the common parameters for 
+		 * 2D texture maps. 
+		 */
+		protected void buildTexture(GL10 gl, Context context, int resourceId) {
+
+			int textureName = -1;
+			if(this.containsKey(resourceId) == true)
+				return;
+			
+			else if (context != null && gl != null) {
+				gl.glGenTextures(1, mTextureNameWorkspace, 0);
+				textureName = mTextureNameWorkspace[0];
+				gl.glBindTexture(GL11.GL_TEXTURE_2D, textureName);
+
+				gl.glTexParameterf(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
+				gl.glTexParameterf(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
+
+				gl.glTexParameterf(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL11.GL_CLAMP_TO_EDGE);
+				gl.glTexParameterf(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL11.GL_CLAMP_TO_EDGE);
+
+				gl.glTexEnvf(GL11.GL_TEXTURE_ENV, GL11.GL_TEXTURE_ENV_MODE, GL11.GL_REPLACE);
+
+				InputStream is = context.getResources().openRawResource(resourceId);
+				Bitmap bitmap;
+				try {
+					bitmap = BitmapFactory.decodeStream(is, null, sBitmapOptions);
+				} finally {
+					try {
+						is.close();
+					} catch (IOException e) {
+						// Ignore.
+					}
+				}
+
+				GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, bitmap, 0);
+
+				mCropWorkspace[0] = 0;
+				mCropWorkspace[1] = bitmap.getHeight();
+				mCropWorkspace[2] = bitmap.getWidth();
+				mCropWorkspace[3] = -bitmap.getHeight();
+
+				bitmap.recycle();
+
+				((GL11) gl).glTexParameteriv(GL10.GL_TEXTURE_2D, 
+						GL11Ext.GL_TEXTURE_CROP_RECT_OES, mCropWorkspace, 0);
+
+
+				int error = gl.glGetError();
+				if (error != GL10.GL_NO_ERROR) {
+					Log.e("SpriteMethodTest", "Texture Load GLError: " + error);
+				}else{
+					put(resourceId, textureName);
+				}
+			}
+		}	
+	}//end of class	Texture Map.
 }//end of class

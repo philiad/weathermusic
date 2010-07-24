@@ -20,6 +20,8 @@ import javax.microedition.khronos.opengles.GL10;
 import javax.microedition.khronos.opengles.GL11;
 import javax.microedition.khronos.opengles.GL11Ext;
 
+import com.huewu.game.rocketnplanet.object.ObjectManager.TextureMap;
+
 
 
 /**
@@ -29,59 +31,45 @@ import javax.microedition.khronos.opengles.GL11Ext;
  * using the DrawTexture extension.
  */
 public class GLSprite extends Renderable {
-    // The OpenGL ES texture handle to draw.
-    private int mTextureName;
-    // The id of the original resource that mTextureName is based on.
-    private int mResourceId;
-    // If drawing with verts or VBO verts, the grid object defining those verts.
-    private Grid mGrid;
-    
-    public GLSprite(int resourceId) {
-        super();
-        mResourceId = resourceId;
-    }
-    
-    public void setTextureName(int name) {
-        mTextureName = name;
-    }
-    
-    public int getTextureName() {
-        return mTextureName;
-    }
-    
-    public void setResourceId(int id) {
-        mResourceId = id;
-    }
-    
-    public int getResourceId() {
-        return mResourceId;
-    }
-    
-    public void setGrid(Grid grid) {
-        mGrid = grid;
-    }
-    
-    public Grid getGrid() {
-        return mGrid;
-    }
-    
-    public void draw(GL10 gl) {
-        gl.glBindTexture(GL11.GL_TEXTURE_2D, mTextureName);
+	// The OpenGL ES texture handle to draw.
+	int mTextureName;
+	// The id of the original resource that mTextureName is based on.
+	int mResourceId;
+	// If drawing with verts or VBO verts, the grid object defining those verts.
+	Grid mGrid;
+	TextureMap textures;
 
-        if (mGrid == null) {
-            // Draw using the DrawTexture extension.
-            ((GL11Ext) gl).glDrawTexfOES(x, y, z, width, height);
-        } else {
-            // Draw using verts or VBO verts.
-            gl.glPushMatrix();
-            gl.glLoadIdentity();
-            gl.glTranslatef(
-                    x, 
-                    y, 
-                    z);
-            
-            mGrid.draw(gl, true, false);
-            gl.glPopMatrix();
-        }
-    }
+	public GLSprite(int resourceId, TextureMap textures) {
+		super();
+		mResourceId = resourceId;
+		this.textures = textures; 
+	}
+
+	public void setGrid(Grid grid) {
+		mGrid = grid;
+	}
+
+	public Grid getGrid() {
+		return mGrid;
+	}
+
+	public void draw(GL10 gl) {
+		gl.glBindTexture(GL11.GL_TEXTURE_2D, textures.getTextureName(mResourceId));
+
+		if (mGrid == null) {
+			// Draw using the DrawTexture extension.
+			((GL11Ext) gl).glDrawTexfOES(x, y, z, width, height);
+		} else {
+			// Draw using verts or VBO verts.
+			gl.glPushMatrix();
+			gl.glLoadIdentity();
+			gl.glTranslatef(
+					x, 
+					y, 
+					z);
+
+			mGrid.draw(gl, true, false);
+			gl.glPopMatrix();
+		}
+	}
 }//end of class
