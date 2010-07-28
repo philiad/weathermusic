@@ -53,8 +53,7 @@ public class ScrollApplyer implements IApplyer{
 	void setViewSize(int w, int h){
 		
 		int c = w / 2;
-		int s = w / 8;
-		int f = w / 4;
+		int s = w / 6;
 		
 		scrollBound.bottom = h;
 		scrollBound.top = 0;

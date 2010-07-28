@@ -81,7 +81,7 @@ public class OpenGLTestActivity extends Activity {
 	@Override
 	protected void onDestroy() {
 		ProfileRecorder.sSingleton.stop(ProfileRecorder.PROFILE_FRAME);
-		Log.i("Profile", "Frame: " + ProfileRecorder.sSingleton.getAverageTime(ProfileRecorder.PROFILE_FRAME));
+		Log.i("Profile", "Frame: " + ProfileRecorder.sSingleton.getAverageTime(ProfileRecorder.PROFILE_FRAME));		
 		super.onDestroy();
 	}
 }//end of class
