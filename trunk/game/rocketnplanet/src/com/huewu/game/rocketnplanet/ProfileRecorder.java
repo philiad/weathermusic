@@ -61,6 +61,13 @@ public class ProfileRecorder {
         }
     }
     
+    public boolean isStart(int profileType){
+        if (profileType < PROFILE_COUNT) {
+            return (mProfiles[profileType].mStartTime != 0);
+        }
+        return false;
+    }
+    
     /** Indicates the end of the frame.*/
     public void endFrame() {
         mFrameCount++;

@@ -64,7 +64,7 @@ public class GameProcessor implements OnTouchListener, Runnable{
         graviter.addTargets(om.getEnemy());
         looper.addTargets(om.getEnemy());
         scroll.addTargets(om.getEnemy());
-        scroll.addTargets(om.getBackground());
+        scroll.addTargets(om.getTileMap());
         scroll.setHero(om.getHero());
 	}		
 

@@ -42,7 +42,8 @@ public class GLSprite extends Renderable {
 	public GLSprite(int resourceId, TextureMap textures) {
 		super();
 		mResourceId = resourceId;
-		this.textures = textures; 
+		this.textures = textures;
+		mTextureName = textures.getTextureName(mResourceId);
 	}
 
 	public void setGrid(Grid grid) {
@@ -54,7 +55,10 @@ public class GLSprite extends Renderable {
 	}
 
 	public void draw(GL10 gl) {
-		gl.glBindTexture(GL11.GL_TEXTURE_2D, textures.getTextureName(mResourceId));
+		if(mTextureName == -1)
+			mTextureName = textures.getTextureName(mResourceId);
+		
+		gl.glBindTexture(GL11.GL_TEXTURE_2D, mTextureName);
 
 		if (mGrid == null) {
 			// Draw using the DrawTexture extension.

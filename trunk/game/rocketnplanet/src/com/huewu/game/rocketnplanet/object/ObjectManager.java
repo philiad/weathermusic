@@ -20,6 +20,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 
 import com.huewu.game.rocketnplanet.R;
+import com.huewu.game.rocketnplanet.logic.ScrollApplyer;
 
 public class ObjectManager {
 	
@@ -32,6 +33,7 @@ public class ObjectManager {
 	final RenderableList obstacle = new RenderableList();	
 	//scrolled by user character's position.
 	final RenderableList background = new RenderableList();	
+	final RenderableList tileMap = new RenderableList();	
 	final GridPool gridPool = new GridPool();	
 	final TextureMap textureMap = new TextureMap();
 	
@@ -49,7 +51,7 @@ public class ObjectManager {
 		// We need to know the width and height of the display pretty soon,
 		// so grab the information now.
 		
-		int resList[] = new int[] {R.drawable.background, R.drawable.moon, R.drawable.skate1, R.drawable.skate2, R.drawable.skate3, R.drawable.icon};
+		int resList[] = new int[] {R.drawable.wood_bar, R.drawable.background, R.drawable.moon, R.drawable.skate1, R.drawable.skate2, R.drawable.skate3, R.drawable.icon};
 		om.textureMap.setResourceList(resList);
 
 		GLSprite background = new GLSprite(R.drawable.background, om.textureMap);
@@ -59,7 +61,7 @@ public class ObjectManager {
 		background.height = backgoundBitmap.getHeight();
 
 		// Setup the background grid.  This is just a quad.
-		Grid backgroundGrid = om.gridPool.requireGrid(2, 2, false);
+		Grid backgroundGrid = om.gridPool.requireGrid(GridPool.BACKGROUND_GRID);
 		backgroundGrid.set(0, 0,  0.0f, 0.0f, 0.0f, 0.0f, 1.0f, null);
 		backgroundGrid.set(1, 0, background.width, 0.0f, 0.0f, 1.0f, 1.0f, null);
 		backgroundGrid.set(0, 1, 0.0f, background.height, 0.0f, 0.0f, 0.0f, null);
@@ -72,18 +74,24 @@ public class ObjectManager {
 		Grid spriteGrid = null;
 		// Setup a quad for the sprites to use.  All sprites will use the
 		// same sprite grid intance.
-		spriteGrid = om.gridPool.requireGrid(2,2,false);
+		spriteGrid = om.gridPool.requireGrid(GridPool.SPRITE_GRID);
 		spriteGrid.set(0, 0,  0.0f, 0.0f, 0.0f, 0.0f , 1.0f, null);
 		spriteGrid.set(1, 0, SPRITE_WIDTH, 0.0f, 0.0f, 1.0f, 1.0f, null);
 		spriteGrid.set(0, 1, 0.0f, SPRITE_HEIGHT, 0.0f, 0.0f, 0.0f, null);
 		spriteGrid.set(1, 1, SPRITE_WIDTH, SPRITE_HEIGHT, 0.0f, 1.0f, 0.0f, null);
 		
+		// Tile grid instance
+		Grid tileGrid = om.gridPool.requireGrid(GridPool.TILE_GRID);
+		tileGrid.set(0, 0,  0.0f, 0.0f, 0.0f, 0.0f , 1.0f, null);
+		tileGrid.set(1, 0, SPRITE_WIDTH * 4.0f, 0.0f, 0.0f, 1.0f, 1.0f, null);
+		tileGrid.set(0, 1, 0.0f, SPRITE_HEIGHT, 0.0f, 0.0f, 0.0f, null);
+		tileGrid.set(1, 1, SPRITE_WIDTH * 4.0f, SPRITE_HEIGHT, 0.0f, 1.0f, 0.0f, null);
 		
-		TileMap tileMap = new TileMap(R.drawable.skate3, om.textureMap);
-		tileMap.createTiles(50, 50, background.width, background.height);
-		tileMap.setGrid(spriteGrid);
+		TileMapSprite tileMap = new TileMapSprite(new int[]{R.drawable.wood_bar, R.drawable.moon, R.drawable.skate3}, om.textureMap);
+		tileMap.createTiles(SPRITE_WIDTH * 4.0f, SPRITE_HEIGHT, background.width, background.height);
+		tileMap.setGrid(tileGrid);
+		om.tileMap.add(tileMap);	
 		om.allSprite.add(tileMap);
-		
 
 		// This list of things to move. It points to the same content as the
 		// sprite list except for the background.
@@ -162,9 +170,16 @@ public class ObjectManager {
 	public RenderableList getObstacle() {
 		return obstacle;
 	}
+	
+	public RenderableList getTileMap(){
+		return tileMap;
+	}
 
-	public void buildTextureMap(GL10 gl, Context context) {
+	public void initObjectManager(GL10 gl, Context context) {
+		textureMap.clearTextureMap();
 		textureMap.buildTextureMap(gl, context);
+		gridPool.releaseHardwareBuffers(gl, context);
+		gridPool.generateHardwareBufffers(gl, context);
 	}
 	
 	class TextureMap extends LinkedHashMap<Integer, Integer>{
@@ -185,8 +200,6 @@ public class ObjectManager {
 				return;
 			
 			sBitmapOptions = new Options();
-			
-			clearTextureMap();
 			sBitmapOptions.inPreferredConfig = Bitmap.Config.RGB_565;
 			for(int r : resList){
 				buildTexture(gl, context, r);
@@ -198,11 +211,14 @@ public class ObjectManager {
 		}
 
 		public int getTextureName(int resourceId){
-			try{
-				return get(resourceId);
-			}catch (Exception e){
+			if(get(resourceId) == null)
 				return -1;
-			}
+			else
+				return get(resourceId);			
+//			if(this.containsKey(resourceId) == true)
+//				return get(resourceId);
+//			else
+//				return -1;
 		}
 		
 		/** 

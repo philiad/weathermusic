@@ -87,11 +87,14 @@ public class SimpleGLRenderer implements Renderer {
 
 	@Override
 	public void onSurfaceChanged(GL10 gl, int width, int height) {
+		Log.i("Profile", "surfaceChanged");
 		sizeChanged(gl,width, height);
 	}
 
 	@Override
 	public void onSurfaceCreated(GL10 gl, EGLConfig config) {
+		Log.i("Profile", "surfaceCreated");
+				
 		surfaceCreated(gl);
 		ProfileRecorder.sSingleton.start(ProfileRecorder.PROFILE_FRAME);
 	}    
@@ -171,31 +174,7 @@ public class SimpleGLRenderer implements Renderer {
 		gl.glDisable(GL11.GL_LIGHTING);
 
 		gl.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
-
-		// If we are using hardware buffers and the screen lost context
-		// then the buffer indexes that we recorded previously are now
-		// invalid.  Forget them here and recreate them below.
-		if (mUseHardwareBuffers) {
-			for(GLSprite s : om.getAllSprite()){
-				// Ditch old buffer indexes.
-				s.getGrid().invalidateHardwareBuffers();
-			}
-		}
-		
-		om.buildTextureMap(gl, mContext);
-
-		// Load our texture and set its texture name on all sprites.
-
-//		for(GLSprite s : om.getAllSprite()){
-//			int resource = s.getResourceId();
-//			s.setTextureName(textureMap.getBitamp(gl, resource));
-//			if (mUseHardwareBuffers) {
-//				Grid currentGrid = s.getGrid();
-//				if (!currentGrid.usingHardwareBuffers()) {
-//					currentGrid.generateHardwareBuffers(gl);
-//				}
-//			}
-//		}
+		om.initObjectManager(gl, mContext);
 	}
 
 	/**
